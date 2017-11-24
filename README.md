@@ -32,9 +32,11 @@ Configuring the PostGIS exporter is solely based on environment variables.
 
 - `CRON_SCHEDULE`: Cron format for running exports. Default is *0 0 \* \* \* *.
 
+## 2. Usage
 
+```docker run -d -e "PGHOST_REMOTE=foo.bar" -e "PGPORT_REMOTE=5432" -e "PGDATABASE_REMOTE=mydb" -e "PGUSER_REMOTE=someuser" -e "PGPASSWORD_REMOTE=somepassword" -e CRON_SCHEDULE='0 0 * * 1' pgis2shp:latest```
 
-## 2. Security issues with postgreSQL passwords
+## 3. Security issues with postgreSQL passwords
 
 
 The image has been designed to avoid storing postgreSQL password as much as possible. Yet passwords for local and remote connections are exposed in three places:
