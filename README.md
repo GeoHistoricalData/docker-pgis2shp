@@ -7,7 +7,7 @@ This image is currently used to automate daily exports of geographical databases
 
 The export scripts `init.sql` and `export.sh` are specific to the GeoHistoricalData database, but can be modified or replaced to adapt this image to your own project.
 
-Build upon [mdillon/postgis](https://hub.docker.com/r/mdillon/postgis/) with PostgreSQL 9.6 and PostGIS 2.3
+Built upon [mdillon/postgis](https://hub.docker.com/r/mdillon/postgis/) with PostgreSQL 9.6 and PostGIS 2.3
 
 
 ## 1. Configuration
