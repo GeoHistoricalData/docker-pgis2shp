@@ -30,7 +30,7 @@ Configuring the PostGIS exporter is solely based on environment variables.
 
 #### Scheduling exports
 
-- `CRON_SCHEDULE`: Cron format for running exports. Default is * 0 0 \* \* \* *.
+- `CRON_SCHEDULE`: Cron format for running exports. Default is *'0 0 \* \* \* '*.
 
 ## 2. Usage
 
