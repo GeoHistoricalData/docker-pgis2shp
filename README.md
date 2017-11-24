@@ -40,7 +40,7 @@ Configuring the PostGIS exporter is solely based on environment variables.
 
 2. Run
 
-```docker run -d -e "PGHOST_REMOTE=foo.bar" -e "PGPORT_REMOTE=5432" -e "PGDATABASE_REMOTE=mydb" -e "PGUSER_REMOTE=someuser" -e "PGPASSWORD_REMOTE=somepassword" -e CRON_SCHEDULE='0 0 * * 1' pgis2shp:latest```
+```docker run -d -e "PGHOST_REMOTE=foo.bar" -e "PGPORT_REMOTE=5432" -e "PGDATABASE_REMOTE=mydb" -e "PGUSER_REMOTE=someuser" -e "PGPASSWORD_REMOTE=somepassword" -e CRON_SCHEDULE='0 0 * * 1' pgis2shp:1.0```
 
 ## 3. Security issues with postgreSQL passwords
 
