@@ -46,7 +46,7 @@ qlistnets="SELECT * FROM dblink(
   ) AS remote(table_name text)"
 
 succ=0
-fail=0
+n=0
 
 #Do all the work in the volatile directory /tmp
 [[ -d  /tmp/networks ]] || mkdir /tmp/networks
@@ -57,6 +57,7 @@ networks=$($psql_local "$qlistnets")
 for tbl in ${networks[@]};
 do
   echo 'Exporting network '$remote_schema'.'$tbl''
+  let "n++"
   [[ -d ${tbl} ]] || mkdir ${tbl} #One export dir per network
   cd ${tbl}
   touch .version
@@ -88,10 +89,13 @@ do
 
       #Export the error report
       if [[ $? -eq 0 ]]; then
+        rm -f ${tbl}_err.tar.gz
+        echo 'Logging clanup errors...'
         pgsql2shp -r -f ${tbl}_err.shp -k -h localhost -u $PGUSER $(if [[ -n $PGPASSWORD ]]; then echo "-P $PGPASSWORD"; fi) $PGDATABASE  \
           "SELECT * FROM cleaned_${remote_schema}_${tbl}.cleanup_errors" \
         && find . -name "*_err.shp" -o -name "*_err.dbf" -o -name "*_err.shx" -o -name "*_err.prj" -o -name "*_err.cpg" | tar -C . --remove-files -zcf ${tbl}_err.tar.gz -T - \
         &&  cp ${tbl}_err.tar.gz ..
+
       fi
   else
     echo "$vnew is already the latest version available."
@@ -107,16 +111,15 @@ done
 touch info.txt \
 && echo 'Exported on' $(date +%Y-%m-%d-%H:%M) | tee info.txt 
 
-[[ -f $(ls | grep *_err.tar.gz ) ]] && tar --remove-files -zcf $export_path/networks_err.tar.gz *_err.tar.gz
 
-tar --remove-files -zcf $export_path/networks.tar.gz *.tar.gz info.txt
+tar --remove-files -zcf $export_path/networks.tar.gz *.tar.gz info.txt \
+&& rm -f $export_path/networks_err.tar.gz \
+&& [[ -f $(ls | grep *_err.tar.gz ) ]] \
+&& tar --remove-files -zcf $export_path/networks_err.tar.gz *_err.tar.gz
 
-#pgsql2shp -r -f ${tbl}_err.shp -k -h localhost -u $PGUSER $(if [[ -n $PGPASSWORD ]]; then echo "-P $PGPASSWORD"; fi) $PGDATABASE  "SELECT * FROM cleaned_${remote_schema}_${tbl}.cleanup_errors" \
-
-#R
 echo -e "----------------------------------------------------------------\n" \
 "Export ended on" $(date) \
-"\n $succ/${#networks[@]} network(s) exported successfuly" \
+"\n $succ/$n network(s) exported successfully" \
 "\n $(tar -tzf ${export_path}/networks.tar.gz | wc -l) files exported:\n" 
 tar -ztf ${export_path}/networks.tar.gz
 echo '----------------------------------------------------------------'
