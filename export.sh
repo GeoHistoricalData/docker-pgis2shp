@@ -49,7 +49,7 @@ succ=0
 fail=0
 
 #Do all the work in the volatile directory /tmp
-[ -d  /tmp/networks ] || mkdir /tmp/networks
+[[ -d  /tmp/networks ]] || mkdir /tmp/networks
 cd /tmp/networks
 
 #Export each network to a shapefile
@@ -57,7 +57,7 @@ networks=$($psql_local "$qlistnets")
 for tbl in ${networks[@]};
 do
   echo 'Exporting network '$remote_schema'.'$tbl''
-  [ -d ${tbl} ] || mkdir ${tbl} #One export dir per network
+  [[ -d ${tbl} ]] || mkdir ${tbl} #One export dir per network
   cd ${tbl}
   touch .version
   
@@ -77,25 +77,37 @@ do
                             AS t(vnum integer)"
         )
   vold=$(cat .version)
-  if [ -z "$vnew" ]||[ -z "$vold" ]||[ "$vnew" != "$vold" ]; then
+  if [[ ( -z "$vnew"  ) || ( -z "$vold" ) || ( "$vnew" -ne "$vold" ) ]]; then 
       echo "New version found: ${vnew:-'unversionned'} (previously ${vold:-'none'})."
       #Actually export the network
       $psql_local "SET client_min_messages TO WARNING; SELECT remote_net_cleanup('foreign_db','$remote_schema','$tbl','gid','geom',2.0);" \
       && pgsql2shp -r -f ${tbl}.shp -k -h localhost -u $PGUSER $(if [[ -n $PGPASSWORD ]]; then echo "-P $PGPASSWORD"; fi) $PGDATABASE  \
         "SELECT edge_id AS gid, streetname, note, edge_geom AS geom FROM cleaned_${remote_schema}_${tbl}.${tbl}" \
       && find . -name "*.shp" -o -name "*.dbf" -o -name "*.shx" -o -name "*.prj" -o -name "*.cpg" | tar -C . --remove-files -zcf ${tbl}.tar.gz -T - \
-      && echo $vnew > .version \
+      && echo $vnew > .version
+
+      #Export the error report
+      if [[ $? -eq 0 ]]; then
+        pgsql2shp -r -f ${tbl}_err.shp -k -h localhost -u $PGUSER $(if [[ -n $PGPASSWORD ]]; then echo "-P $PGPASSWORD"; fi) $PGDATABASE  \
+          "SELECT * FROM cleaned_${remote_schema}_${tbl}.cleanup_errors" \
+        && find . -name "*_err.shp" -o -name "*_err.dbf" -o -name "*_err.shx" -o -name "*_err.prj" -o -name "*_err.cpg" | tar -C . --remove-files -zcf ${tbl}_err.tar.gz -T - \
+        &&  cp ${tbl}_err.tar.gz ..
+      fi
   else
     echo "$vnew is already the latest version available."
   fi
+
   cp ${tbl}.tar.gz .. &&
   let "succ++"
+ 
   cd /tmp/networks
 done
 
 #Compress everything and send it to the export dir
 touch info.txt \
 && echo 'Exported on' $(date +%Y-%m-%d-%H:%M) | tee info.txt 
+
+[[ -f $(ls | grep *_err.tar.gz ) ]] && tar --remove-files -zcf $export_path/networks_err.tar.gz *_err.tar.gz
 
 tar --remove-files -zcf $export_path/networks.tar.gz *.tar.gz info.txt
 
